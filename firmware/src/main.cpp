@@ -4,18 +4,15 @@
 #include <WebServer.h>
 #include <WiFiManager.h>
 
-#include "ota.h"
-
-#define CAMERA_FOCUS_PIN 12
+#define CAMERA_FOCUS_PIN 16
 #define CAMERA_FOCUS_INVERT true
-#define CAMERA_TRIGGER_PIN 13
+#define CAMERA_TRIGGER_PIN 17
 #define CAMERA_TRIGGER_INVERT true
 
 #define STEPPER_DIR_PIN 25
 #define STEPPER_STEP_PIN 26
 #define STEPPER_ENABLE_PIN 27
 
-OTA ota;
 WebServer server(80);
 StaticJsonDocument<250> jsonDocument;
 char buffer[250];
@@ -29,7 +26,7 @@ void CoreTask0(void *parameter) {
   if (stepper) {
     stepper->setDirectionPin(STEPPER_DIR_PIN);
     stepper->setEnablePin(STEPPER_ENABLE_PIN);
-    stepper->setAutoEnable(true);
+    stepper->setAutoEnable(false);
 
     stepper->setSpeedInHz(5000);
     stepper->setAcceleration(2500);
@@ -50,12 +47,24 @@ void handleMove() {
   deserializeJson(jsonDocument, body);
 
   int v = jsonDocument["steps"];
+  JsonVariant off = jsonDocument["off-after-move"];
   Serial.print("Move ");
   Serial.println(v);
+  Serial.print("off after move: ");
+  if(off.isNull()){
+    stepper->setAutoEnable(false);
+    Serial.println(0);
+  }else{
+    bool o = off.as<bool>();
+    stepper->setAutoEnable(o);
+    Serial.println(o);
+  }
+  stepper->enableOutputs();
   stepper->move(v);
 
   server.send(200, "application/json", "{}");
 }
+
 void setOut(uint8_t pin, bool value, bool inverted) {
   if (inverted) {
     digitalWrite(pin, !value);
@@ -115,9 +124,8 @@ void setup() {
   Serial.print(getCpuFrequencyMhz());
   Serial.println("MHz");
   WiFiManager wifiManager;
-  // wifiManager.resetSettings();
+  // wifiManager.resetSettings(); // DEBUG
   wifiManager.autoConnect("AutoConnectAP");
-  ota.begin();
 
   pinMode(CAMERA_TRIGGER_PIN, OUTPUT);
   pinMode(CAMERA_FOCUS_PIN, OUTPUT);
@@ -134,6 +142,5 @@ void setup() {
 }
 
 void loop() {
-  // ota.loop();
   server.handleClient();
 }

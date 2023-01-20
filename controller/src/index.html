@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8"/>
+  <title>Rotator</title>
+  <meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'"
+  />
+
+  <link href="./style.css" type="text/css" rel="stylesheet"/>
+</head>
+
+<body>
+<div class="settings raised">
+  <label for="host" class="label">Host: </label>
+  <input type="text" name="host" id="host" class="input">
+
+  <label for="steps-per-revolution" class="label">StepsPerRev: </label>
+  <input type="number" name="steps-per-revolution" id="steps-per-revolution" class="input" value="32000">
+</div>
+<div class="buttons">
+  <button id="set-settings" class="button raised">Change Settings</button>
+</div>
+
+
+<div class="content raised">
+  <label for="img-count" class="label">Images: </label>
+  <input type="number" name="img-count" id="img-count" class="input" value="5">
+
+  <label for="focus-time" class="label">Focus[ms]: </label>
+  <input type="number" name="focus-time" id="focus-time" class="input" value="250">
+
+  <label for="trigger-time" class="label">trigger[ms]: </label>
+  <input type="number" name="trigger-time" id="trigger-time" class="input" value="250">
+</div>
+
+<div class="buttons">
+  <button id="start" class="button raised">Start</button>
+  <button id="stop" class="button raised">Stop</button>
+</div>
+
+<div class="status raised" id="status">-</div>
+
+<script src="jquery-3.6.3.min.js"></script>
+<script src="./renderer.js"></script>
+</body>
+</html>
