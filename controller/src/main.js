@@ -18,7 +18,7 @@ function createWindow() {
   // Create the browser window.
   const w = new BrowserWindow({
     width: 323,
-    height: 385,
+    height: 415,
     show: false,
     autoHideMenuBar: true,
     ...(process.platform === 'linux'
@@ -68,10 +68,11 @@ app.whenReady().then(() => {
     }
   })
 
-  ipcMain.on('start', (event, imageCount, focusTime, triggerTime) => {
-    // console.log('start', {imageCount, focusTime, triggerTime})
-    start(imageCount, focusTime, triggerTime).then()
-  })
+  ipcMain.on('start',
+    (event, imageCount, focusTime, triggerTime, delayAfterShot) => {
+      // console.log('start', {imageCount, focusTime, triggerTime})
+      start(imageCount, focusTime, triggerTime, delayAfterShot).then()
+    })
 
   ipcMain.on('stop', (event) => {
     // console.log('stop')
@@ -79,20 +80,23 @@ app.whenReady().then(() => {
   })
 
   ipcMain.on('setSettings',
-    (event, host, spr, imageCount, focusTime, triggerTime) => {
-      console.log('setSettings', host, spr, imageCount, focusTime, triggerTime)
+    (event, host, spr, imageCount, focusTime, triggerTime, delayAfterShot) => {
+      console.log('setSettings', host, spr, imageCount, focusTime, triggerTime,
+        delayAfterShot)
 
       rotator.host = host;
       status.stepsPerRevolution = spr;
       status.amount = imageCount;
       status.focusTime = focusTime;
       status.triggerTime = triggerTime;
+      status.delayAfterShot = delayAfterShot;
 
       config.host = host;
       config.spr = spr;
       config.imageCount = imageCount;
       config.focusTime = focusTime;
       config.triggerTime = triggerTime;
+      config.delayAfterShot = delayAfterShot;
 
       storage.set('rotator', config);
       sendSettings();
@@ -112,11 +116,13 @@ config.spr = config.spr || '200';
 config.imageCount = config.imageCount || 10;
 config.focusTime = config.focusTime || 500;
 config.triggerTime = config.triggerTime || 500;
+config.delayAfterShot = config.delayAfterShot || 500;
 console.log('Config', config);
 
 const STATE = {
   'SHOOTING': 'SHOOTING',
   'MOVING': 'MOVING',
+  'DELAY': 'DELAY',
   'REWINDING': 'REWINDING',
   'DONE': 'DONE',
   'STOPPING': 'STOPPING',
@@ -128,6 +134,7 @@ const status = {
   state: STATE.DONE,
   focusTime: config.focusTime,
   triggerTime: config.triggerTime,
+  delayAfterShot: config.delayAfterShot,
   pos: 0,
   stepsPerRevolution: config.spr
 }
@@ -135,16 +142,17 @@ const status = {
 console.log('storage', storage.getDataPath());
 const rotator = new Rotator(config.host);
 
-async function start(imageCount, focusTime, triggerTime) {
+async function start(imageCount, focusTime, triggerTime, delayAfterShot) {
   if (status.state !== STATE.DONE) {
     console.log('already running')
     return;
   }
-  console.log('start', {imageCount, focusTime, triggerTime})
+  console.log('start', {imageCount, focusTime, triggerTime, delayAfterShot})
   status.amount = imageCount;
   status.index = 0;
   status.focusTime = focusTime;
   status.triggerTime = triggerTime;
+  status.delayAfterShot = delayAfterShot;
   status.pos = 0
 
   for (status.index = 0; status.index < status.amount; ++status.index) {
@@ -166,6 +174,14 @@ async function start(imageCount, focusTime, triggerTime) {
     sendState(STATE.SHOOTING);
     await rotator.shot(status.focusTime, status.triggerTime);
 
+    // Delay
+    if (status.state === STATE.STOPPING) {
+      break;
+    }
+    if (status.delayAfterShot > 0) {
+      sendState(STATE.DELAY);
+      await delay(status.delayAfterShot)
+    }
   }
 
   // go back
@@ -198,7 +214,13 @@ function sendState(newState) {
 function sendSettings() {
   mainWindow.webContents.send('settings', rotator.host,
     status.stepsPerRevolution, status.amount, status.focusTime,
-    status.triggerTime)
+    status.triggerTime, status.delayAfterShot)
+}
+
+function delay(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms)
+  })
 }
 
 // Quit when all windows are closed, except on macOS. There, it's common

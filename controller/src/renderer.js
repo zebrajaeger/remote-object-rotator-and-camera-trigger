@@ -12,25 +12,28 @@
       const ic = $('#img-count').val();
       const focus = $('#focus-time').val();
       const trigger = $('#trigger-time').val();
+      const das = $('#delay-after-shot').val();
 
-      window.electronAPI.setSettings(host, spr, ic, focus, trigger)
+      window.electronAPI.setSettings(host, spr, ic, focus, trigger, das)
     })
 
-    window.electronAPI.settings((event, host, spr, ic, ft, tt) => {
+    window.electronAPI.settings((event, host, spr, ic, ft, tt, das) => {
       $('#host').val(host);
       $('#steps-per-revolution').val(spr);
       $('#img-count').val(ic);
       $('#focus-time').val(ft);
       $('#trigger-time').val(tt);
+      $('#delay-after-shot').val(das);
     })
 
     $('#start').click(_ => {
       const ic = $('#img-count').val();
       const focus = $('#focus-time').val();
       const trigger = $('#trigger-time').val();
+      const das = $('#delay-after-shot').val();
 
-      console.log('start', ic, focus, trigger)
-      window.electronAPI.start(ic, focus, trigger)
+      console.log('start', ic, focus, trigger, das)
+      window.electronAPI.start(ic, focus, trigger, das)
     })
 
     $('#stop').click(_ => {
