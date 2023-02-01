@@ -1,9 +1,10 @@
 // Modules to control application life and create native browser window
 const {ipcMain, app, shell, BrowserWindow} = require('electron')
 const path = require('path')
+const fs = require('fs')
 const {electronApp, optimizer} = require('@electron-toolkit/utils')
 const storage = require('electron-json-storage');
-
+const notifier = require('node-notifier');
 const {Rotator} = require('./rotator');
 
 try {
@@ -13,6 +14,10 @@ try {
 }
 
 let mainWindow = undefined;
+const packageJason = JSON.parse(
+  fs.readFileSync(__dirname + '/../package.json', 'utf8'));
+const appID = packageJason.build.appId;
+const icon = path.join(__dirname, '../resources/icon.png');
 
 function createWindow() {
   // Create the browser window.
@@ -23,7 +28,7 @@ function createWindow() {
     autoHideMenuBar: true,
     ...(process.platform === 'linux'
       ? {
-        icon: path.join(__dirname, '../resources/icon.png')
+        icon
       }
       : {}),
     webPreferences: {
@@ -70,7 +75,6 @@ app.whenReady().then(() => {
 
   ipcMain.on('start',
     (event, imageCount, focusTime, triggerTime, delayAfterShot) => {
-      // console.log('start', {imageCount, focusTime, triggerTime})
       start(imageCount, focusTime, triggerTime, delayAfterShot).then()
     })
 
@@ -173,6 +177,7 @@ async function start(imageCount, focusTime, triggerTime, delayAfterShot) {
 
     // move
     if (status.state === STATE.STOPPING) {
+      notifyFinish('Stopped', 'Reason: Stopped by user');
       break;
     }
     sendState(STATE.MOVING);
@@ -183,6 +188,7 @@ async function start(imageCount, focusTime, triggerTime, delayAfterShot) {
 
     // Shot
     if (status.state === STATE.STOPPING) {
+      notifyFinish('Stopped', 'Reason: Stopped by user');
       break;
     }
     sendState(STATE.SHOOTING);
@@ -190,6 +196,7 @@ async function start(imageCount, focusTime, triggerTime, delayAfterShot) {
 
     // Delay
     if (status.state === STATE.STOPPING) {
+      notifyFinish('Stopped', 'Reason: Stopped by user');
       break;
     }
     if (status.delayAfterShot > 0) {
@@ -198,12 +205,18 @@ async function start(imageCount, focusTime, triggerTime, delayAfterShot) {
     }
   }
 
+  const showMsg = status.state !== STATE.STOPPING
+
   // go back
   sendState(STATE.REWINDING)
   console.log('REWIND', -status.pos)
   await rotator.moveAndWait(-status.pos, true);
 
   sendState(STATE.DONE)
+
+  if (showMsg) {
+    notifyFinish('Stopped', 'Reason: Finished');
+  }
 }
 
 function stop() {
@@ -239,6 +252,10 @@ function delay(ms) {
 
 function degToSteps(angel) {
   return status.stepsPerRevolution * angel / 360;
+}
+
+function notifyFinish(title, message) {
+  notifier.notify({title, message, wait: false, icon, appID});
 }
 
 // Quit when all windows are closed, except on macOS. There, it's common
