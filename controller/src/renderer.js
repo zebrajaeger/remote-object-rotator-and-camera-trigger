@@ -17,6 +17,25 @@
       window.electronAPI.setSettings(host, spr, ic, focus, trigger, das)
     })
 
+    $('#minus-001').click(_ => {
+      window.electronAPI.manualMove(-1)
+    })
+    $('#minus-010').click(_ => {
+      window.electronAPI.manualMove(-10)
+    })
+    $('#minus-090').click(_ => {
+      window.electronAPI.manualMove(-90)
+    })
+    $('#plus-001').click(_ => {
+      window.electronAPI.manualMove(1)
+    })
+    $('#plus-010').click(_ => {
+      window.electronAPI.manualMove(10)
+    })
+    $('#plus-090').click(_ => {
+      window.electronAPI.manualMove(90)
+    })
+
     window.electronAPI.settings((event, host, spr, ic, ft, tt, das) => {
       $('#host').val(host);
       $('#steps-per-revolution').val(spr);

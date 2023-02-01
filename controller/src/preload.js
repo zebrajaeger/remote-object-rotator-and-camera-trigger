@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   setSettings: (host, stepsPerRevolution, imageCount, focusTime,
     triggerTime, das) => ipcRenderer.send('setSettings', host, stepsPerRevolution,
     imageCount, focusTime, triggerTime, das),
+  manualMove: (angel) => ipcRenderer.send('manual-move', angel),
   getSettings: () => ipcRenderer.send('getSettings'),
   status: (callback) => ipcRenderer.on('status', callback),
   settings: (callback) => ipcRenderer.on('settings', callback),

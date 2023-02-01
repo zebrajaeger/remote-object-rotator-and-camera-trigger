@@ -26,15 +26,16 @@ class Rotator {
     })
   }
 
-  async moveAndWait(steps) {
-    await this.move(steps);
+  async moveAndWait(steps, powerDownAfterMove) {
+    await this.move(steps, powerDownAfterMove);
     return await this.waitForStop();
   }
 
-  async move(steps) {
+  async move(steps, powerDownAfterMove) {
     return new Promise((resolve, reject) => {
+      const off = powerDownAfterMove || false;
       axios
-      .post(`${this.protocol}${this.host}/move`, {steps, 'off-after-move': false})
+      .post(`${this.protocol}${this.host}/move`, {steps, 'off-after-move': off})
       .then((res) => {
         if (res.status === 200) {
           resolve(res.data);

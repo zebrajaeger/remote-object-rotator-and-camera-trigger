@@ -18,7 +18,7 @@ function createWindow() {
   // Create the browser window.
   const w = new BrowserWindow({
     width: 323,
-    height: 415,
+    height: 460,
     show: false,
     autoHideMenuBar: true,
     ...(process.platform === 'linux'
@@ -78,6 +78,10 @@ app.whenReady().then(() => {
     // console.log('stop')
     stop()
   })
+
+  ipcMain.on('manual-move', (event, angel) => {
+    manualMove(angel);
+  });
 
   ipcMain.on('setSettings',
     (event, host, spr, imageCount, focusTime, triggerTime, delayAfterShot) => {
@@ -142,6 +146,16 @@ const status = {
 console.log('storage', storage.getDataPath());
 const rotator = new Rotator(config.host);
 
+function manualMove(angel) {
+  if (status.state !== STATE.DONE) {
+    console.log('Shooting, no manual move allowed')
+    return;
+  }
+  const steps = degToSteps(angel)
+  console.log('Move Manual', angel, steps)
+  rotator.move(steps).then()
+}
+
 async function start(imageCount, focusTime, triggerTime, delayAfterShot) {
   if (status.state !== STATE.DONE) {
     console.log('already running')
@@ -165,7 +179,7 @@ async function start(imageCount, focusTime, triggerTime, delayAfterShot) {
     const x = (status.index * status.stepsPerRevolution)
       / status.amount;
     console.log('MOVE', x)
-    status.pos = await rotator.moveAndWait(x - status.pos);
+    status.pos = await rotator.moveAndWait(x - status.pos, false);
 
     // Shot
     if (status.state === STATE.STOPPING) {
@@ -187,7 +201,7 @@ async function start(imageCount, focusTime, triggerTime, delayAfterShot) {
   // go back
   sendState(STATE.REWINDING)
   console.log('REWIND', -status.pos)
-  await rotator.moveAndWait(-status.pos);
+  await rotator.moveAndWait(-status.pos, true);
 
   sendState(STATE.DONE)
 }
@@ -221,6 +235,10 @@ function delay(ms) {
   return new Promise((resolve) => {
     setTimeout(resolve, ms)
   })
+}
+
+function degToSteps(angel) {
+  return status.stepsPerRevolution * angel / 360;
 }
 
 // Quit when all windows are closed, except on macOS. There, it's common
