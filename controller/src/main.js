@@ -26,11 +26,7 @@ function createWindow() {
     height: 460,
     show: false,
     autoHideMenuBar: true,
-    ...(process.platform === 'linux'
-      ? {
-        icon
-      }
-      : {}),
+    ...(process.platform === 'linux' ? {icon} : {}),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       sandbox: false
@@ -157,7 +153,10 @@ function manualMove(angel) {
   }
   const steps = degToSteps(angel)
   console.log('Move Manual', angel, steps)
-  rotator.move(steps).then()
+  sendIsMoving(true)
+  rotator.moveAndWait(steps).then(_=>{
+    sendIsMoving(false)
+  })
 }
 
 async function start(imageCount, focusTime, triggerTime, delayAfterShot) {
@@ -184,7 +183,9 @@ async function start(imageCount, focusTime, triggerTime, delayAfterShot) {
     const x = (status.index * status.stepsPerRevolution)
       / status.amount;
     console.log('MOVE', x)
+    sendIsMoving(true)
     status.pos = await rotator.moveAndWait(x - status.pos, false);
+    sendIsMoving(false)
 
     // Shot
     if (status.state === STATE.STOPPING) {
@@ -210,7 +211,9 @@ async function start(imageCount, focusTime, triggerTime, delayAfterShot) {
   // go back
   sendState(STATE.REWINDING)
   console.log('REWIND', -status.pos)
+  sendIsMoving(true)
   await rotator.moveAndWait(-status.pos, true);
+  sendIsMoving(false)
 
   sendState(STATE.DONE)
 
@@ -238,6 +241,9 @@ function sendState(newState) {
   mainWindow.webContents.send('status', status)
 }
 
+function sendIsMoving(isMoving){
+  mainWindow.webContents.send('is-moving', isMoving)
+}
 function sendSettings() {
   mainWindow.webContents.send('settings', rotator.host,
     status.stepsPerRevolution, status.amount, status.focusTime,

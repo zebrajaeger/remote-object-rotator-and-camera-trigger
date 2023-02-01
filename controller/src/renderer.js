@@ -36,6 +36,14 @@
       window.electronAPI.manualMove(90)
     })
 
+    window.electronAPI.isMoving((event, isMoving) => {
+      if (isMoving) {
+        $('#status').addClass('moving')
+      } else {
+        $('#status').removeClass('moving')
+      }
+    });
+
     window.electronAPI.settings((event, host, spr, ic, ft, tt, das) => {
       $('#host').val(host);
       $('#steps-per-revolution').val(spr);

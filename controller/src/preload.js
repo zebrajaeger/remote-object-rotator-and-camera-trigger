@@ -9,6 +9,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     imageCount, focusTime, triggerTime, das),
   manualMove: (angel) => ipcRenderer.send('manual-move', angel),
   getSettings: () => ipcRenderer.send('getSettings'),
+
   status: (callback) => ipcRenderer.on('status', callback),
   settings: (callback) => ipcRenderer.on('settings', callback),
+  isMoving: (callback) => ipcRenderer.on('is-moving', callback),
 })
